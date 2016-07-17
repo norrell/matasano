@@ -57,7 +57,29 @@ std::string b64_decode(const std::string &str) {
     // TODO
 }
 
-int calc_hamming_dist(const std::string &s1, const std::string &s2)
+static int calc_hamming_dist(byte c1, byte c2)
 {
-    // TODO
+    int dist = 0;
+    byte xord = c1 ^ c2;
+    while (xord != 0) {
+        dist++;
+        xord &= xord - 1;
+    }
+
+    return dist;
+}
+
+int hamming_distance(const std::string &s1, const std::string &s2)
+{
+    if (s1.size() != s2.size()) {
+        std::cerr << "Strings must be of equal length" << std::endl;
+        return -1;
+    }
+
+    int dist = 0;
+    for (unsigned int i = 0; i < s1.size(); ++i) {
+        dist += calc_hamming_dist((byte) s1[i], (byte) s2[i]);
+    }
+
+    return dist;
 }

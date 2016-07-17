@@ -104,9 +104,7 @@ static void reset_symbol_freqs(std::map<byte, int> &symbol_freq)
 
 static byte to_lower(byte b)
 {
-    if (b < 'a')
-        b += 32;
-    return b;
+    return (b < 'a') ? b + 32 : b;
 }
 
 static void update_symbol_freq(std::map<byte, int> &symbol_freq, byte b)

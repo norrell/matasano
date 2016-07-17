@@ -6,9 +6,11 @@
 
 #include "singlebyte_xor.h"
 #include "detect_singlebyte_xor.h"
+#include "utils.h"
 
-#define DETECT_SINGLEB_XOR
+//#define DETECT_SINGLEB_XOR
 //#define SINGLEB_XOR
+#define HAMMING_DIST
 
 /*
  * Pass hexstring as argument in argv[1]
@@ -16,6 +18,7 @@
 int main(int argc, char *argv[])
 {
 #ifdef SINGLEB_XOR
+    std::cout << "Testing single-byte XOR... (set 1, challenge 3)" << std::endl;
     const char cipher[] = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
     std::list<Plaintext> rank = singlebyte_xor(cipher, sizeof(cipher) - 1);
 
@@ -25,6 +28,8 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DETECT_SINGLEB_XOR
+    std::cout << "Detecting single-byte XOR... (set 1, challenge 4)" << std::endl;
+
     std::ifstream file;
     file.open("4.txt");
     if (!file.is_open()) {
@@ -36,6 +41,13 @@ int main(int argc, char *argv[])
 
     for (Plaintext p : rank)
         std::cout << '\"' << p.plaintext << "\" (score = " << p.score << ", key = " << p.key << ", line = " << p.linenumber << ")" << std::endl;
+#endif
+
+#ifdef HAMMING_DIST
+    std::cout << "Test hamming distance... (set 1, challenge 6)" << std::endl;
+    int hamming = hamming_distance(std::string("this is a test"), std::string("wokka wokka!!!"));
+
+    std::cout << "Hamming distance is " << hamming << std::endl;
 #endif
 
     return 0;
