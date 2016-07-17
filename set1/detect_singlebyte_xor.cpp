@@ -21,8 +21,6 @@ std::list<Plaintext> detect_singlebyte_xor(std::ifstream &file) {
         best = singlebyte_xor(line, line.size(), lno);
         candidates.merge(best, comp_score);
     }
-
-    /* Merge best candidates into final list in sorted position */
     candidates.reverse(); /* highest score first */
 
     return candidates;

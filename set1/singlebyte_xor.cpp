@@ -189,9 +189,9 @@ static int evaluate_letter_freq(const std::map<byte, int> &map)
         if (found != std::string::npos)
             score += 10;
 
-//        found = LEAST_FREQ.find(letter_freq[i+ 20]);
-//        if (found != std::string::npos)
-//            score += 10;
+        //found = LEAST_FREQ.find(letter_freq[i+ 20]);
+        //if (found != std::string::npos)
+        //    score += 10;
     }
 
     return score;
@@ -232,7 +232,6 @@ static int get_consonant_amount(std::map<byte, int> &symbol_freq)
 }
 
 /**
- * Meaningful criteria?
  * 1. If a string contains at least one unprintable character, discard it.
  * 2. If a string contains an unusual punctuation mark such as '#', discard it.
  * 3. If a string contains too much punctuation, lower the score.
@@ -240,7 +239,6 @@ static int get_consonant_amount(std::map<byte, int> &symbol_freq)
  * 5. If a string contains too high/low a percentage of vowels, lower the score.
  * 6. For each of the first 6 most/least frequent letters in string matching the six
  *    most/least frequent English letters, increase the score.
- *
  * N.B.: the current score increments/decrements are quite arbitrary.
  */
 static int calc_score(std::map<byte, int> &symbol_freq, size_t bufsize)
@@ -267,6 +265,7 @@ static int calc_score(std::map<byte, int> &symbol_freq, size_t bufsize)
     if ((double) symbol_freq['.'] / (double) bufsize > 0.3) {
         score -= 30;
     }
+
     /*
      * Penalize too low/high percentage of vowels vs consonants.
      * The ratio of consonants to vowels in English is
@@ -293,10 +292,10 @@ static bool comp_score(const Plaintext &text1, const Plaintext &text2)
 }
 
 /**
- * Receives a buffer of encrypted bytes of length len.
- * Returns a list of the plaintexts with the highest scores.
+ * Receives a vector of encrypted bytes.
+ * Returns a list of the plaintext candidates with the highest scores.
  */
-static std::list<Plaintext> singlebyte_xor(std::vector<byte> cipher, size_t size, int lno)
+static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, size_t size, int lno)
 {
     std::list<Plaintext> best;
 
@@ -335,7 +334,7 @@ std::list<Plaintext> singlebyte_xor(const char *hexstr, size_t strlen_nonull, in
     return singlebyte_xor(cipher, size, lno);
 }
 
-std::list<Plaintext> singlebyte_xor(std::string hexstr, size_t strlen_nonull, int lno)
+std::list<Plaintext> singlebyte_xor(const std::string &hexstr, size_t strlen_nonull, int lno)
 {
     std::vector<byte> cipher = hexstring_to_bin(hexstr, strlen_nonull);
     size_t size = cipher.size();

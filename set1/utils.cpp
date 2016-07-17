@@ -4,7 +4,7 @@
 
 #include "typedefs.h"
 
-std::vector<byte> hexstring_to_bin(std::string hexstr, size_t strlen_nonull)
+std::vector<byte> hexstring_to_bin(const std::string &hexstr, size_t strlen_nonull)
 {
     std::vector<byte> bin(strlen_nonull / 2, (byte) 0);
 
@@ -44,20 +44,20 @@ std::vector<byte> hexstring_to_bin(const char *hexstr, size_t strlen_nonull)
     return hexstring_to_bin(std::string(hexstr, strlen_nonull), strlen_nonull);
 }
 
-std::string bin_to_hexstring(std::vector<byte> bin)
+std::string bin_to_hexstring(std::vector<byte> &bin)
 {
     // TODO
 }
 
-std::string b64_encode(std::vector<byte> v){
+std::string b64_encode(const std::vector<byte> &v){
     // TODO
 }
 
-std::string b64_decode(std::string str) {
+std::string b64_decode(const std::string &str) {
     // TODO
 }
 
-int calc_hamming_dist(std::string s1, std::string s2)
+int calc_hamming_dist(const std::string &s1, const std::string &s2)
 {
     // TODO
 }
