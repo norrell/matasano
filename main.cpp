@@ -6,6 +6,7 @@
 
 #include "singlebyte_xor.h"
 #include "detect_singlebyte_xor.h"
+#include "repeatkey_xor.h"
 #include "utils.h"
 
 #define BASE64
@@ -13,6 +14,7 @@
 #define SINGLEB_XOR
 #define DETECT_SINGLEB_XOR
 #define HAMMING_DIST
+#define REPEAT_XOR
 
 /*
  * Pass hexstring as argument in argv[1]
@@ -32,11 +34,11 @@ int main(int argc, char *argv[])
     /**********************************************/
 
     std::cout << "\nTesting base64 decoding... ";
-    std::string textstr("Man is distinguished");
-    std::string b64str = b64_encode_text(textstr);
+    std::string textstr1("Man is distinguished");
+    std::string b64str = b64_encode_text(textstr1);
     std::string backtotext = b64_decode(b64str);
 
-    if (backtotext == textstr)
+    if (backtotext == textstr1)
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
@@ -113,6 +115,18 @@ int main(int argc, char *argv[])
     }
 
     std::cout << b64_encode(in) << std::endl;
+#endif
+
+#ifdef REPEAT_XOR
+    std::cout << "\nTesting repeating-key XOR... ";
+
+    std::string textstr2("Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal");
+    std::string encr2 = repeatkey_xor(textstr2, "ICE");
+
+    if (encr2 == "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
 #endif
 
 #ifdef HAMMING_DIST
