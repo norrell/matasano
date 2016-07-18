@@ -6,11 +6,11 @@
 
 #include "typedefs.h"
 
-std::vector<byte> hexstring_to_bin(const std::string &hexstr, size_t strlen_nonull)
+std::vector<byte> hex_to_bin(const std::string &hexstr)
 {
-    std::vector<byte> bin(strlen_nonull / 2, (byte) 0);
+    std::vector<byte> bin(hexstr.size() / 2, (byte) 0);
 
-    if (strlen_nonull % 2) {
+    if (hexstr.size() % 2) {
         std::cerr << "Even number of hex digits required" << std::endl;
         return bin;
     }
@@ -31,7 +31,7 @@ std::vector<byte> hexstring_to_bin(const std::string &hexstr, size_t strlen_nonu
         0x00, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };     // `abcdef
 
     byte first, second;
-    for (unsigned int i = 0; i < strlen_nonull - 1; i += 2) {
+    for (unsigned int i = 0; i < hexstr.size() - 1; i += 2) {
         first = hashmap[(int) hexstr[i]];
         second = hashmap[(int) hexstr[i + 1]];
         bin[i / 2] = (byte) ((first << 4) | second);
@@ -40,14 +40,28 @@ std::vector<byte> hexstring_to_bin(const std::string &hexstr, size_t strlen_nonu
     return bin;
 }
 
+#if 0
 std::vector<byte> hexstring_to_bin(const char *hexstr, size_t strlen_nonull)
 {
     return hexstring_to_bin(std::string(hexstr, strlen_nonull), strlen_nonull);
 }
+#endif
 
-std::string bin_to_hexstring(const std::vector<byte> &bin)
+std::string bin_to_hex(const std::vector<byte> &bin)
 {
-    // TODO
+    const char hexdigits[] = "0123456789abcdef";
+
+    std::string str(2 * bin.size(), '.');
+
+    for (int i = 0, k = 0; i < bin.size(); i += 1, k += 2) {
+        byte u_nibble, l_nibble;
+        u_nibble = bin[i] >> 4;
+        l_nibble = bin[i] & 0x0f;
+        str[k] = hexdigits[(int) u_nibble];
+        str[k + 1] = hexdigits[(int) l_nibble];
+    }
+
+    return str;
 }
 
 static std::string b64_encode(const std::vector<byte> &v){
@@ -88,9 +102,15 @@ static std::string b64_encode(const std::vector<byte> &v){
 /*
  * Base64-encode a string
  */
-std::string b64_encode(const std::string &str)
+std::string b64_encode_text(const std::string &str)
 {
     std::vector<byte> v(str.begin(), str.end());
+    return b64_encode(v);
+}
+
+std::string b64_encode(const std::string &hexstr)
+{
+    std::vector<byte> v = hex_to_bin(hexstr);
     return b64_encode(v);
 }
 

@@ -18,7 +18,7 @@ std::list<Plaintext> detect_singlebyte_xor(std::ifstream &file) {
     std::list<Plaintext> best;
     int lno = 0;
     for (std::string line; std::getline(file, line); ++lno) {
-        best = singlebyte_xor(line, line.size(), lno);
+        best = singlebyte_xor(line, lno);
         candidates.merge(best, comp_score);
     }
     candidates.reverse(); /* highest score first */

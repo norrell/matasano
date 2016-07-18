@@ -293,10 +293,10 @@ static bool comp_score(const Plaintext &text1, const Plaintext &text2)
  * Receives a vector of encrypted bytes.
  * Returns a list of the plaintext candidates with the highest scores.
  */
-static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, size_t size, int lno)
+static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, int lno)
 {
     std::list<Plaintext> best;
-
+    size_t size = cipher.size();
     std::map<byte, int> symbol_freq;
     std::vector<byte> plain(size, (byte) 0);
     int maxscore = INT_MIN;
@@ -324,18 +324,18 @@ static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, size
     return best;
 }
 
-std::list<Plaintext> singlebyte_xor(const char *hexstr, size_t strlen_nonull, int lno)
+#if 0
+std::list<Plaintext> singlebyte_xor(const char *cipherhex, size_t strlen_nonull, int lno)
 {
-    std::vector<byte> cipher = hexstring_to_bin(hexstr, strlen_nonull);
+    std::vector<byte> cipher = hexstring_to_bin(cipherhex, strlen_nonull);
     size_t size = cipher.size();
 
     return singlebyte_xor(cipher, size, lno);
 }
+#endif
 
-std::list<Plaintext> singlebyte_xor(const std::string &hexstr, size_t strlen_nonull, int lno)
+std::list<Plaintext> singlebyte_xor(const std::string &hexstr, int lno)
 {
-    std::vector<byte> cipher = hexstring_to_bin(hexstr, strlen_nonull);
-    size_t size = cipher.size();
-
-    return singlebyte_xor(cipher, size, lno);
+    std::vector<byte> cipher = hex_to_bin(hexstr);
+    return singlebyte_xor(cipher, lno);
 }

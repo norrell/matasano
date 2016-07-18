@@ -8,46 +8,96 @@
 #include "detect_singlebyte_xor.h"
 #include "utils.h"
 
-//#define DETECT_SINGLEB_XOR
-//#define SINGLEB_XOR
-//#define HAMMING_DIST
 #define BASE64
+#define HEXBIN
+#define SINGLEB_XOR
+#define DETECT_SINGLEB_XOR
+#define HAMMING_DIST
 
 /*
  * Pass hexstring as argument in argv[1]
  */
 int main(int argc, char *argv[])
 {
+#ifdef BASE64
+    std::cout << "Testing base64 encoding... ";
+    std::string hexstr1("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
+    std::string b64enc = b64_encode(hexstr1);
+
+    if (b64enc == "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t")
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
+
+    /**********************************************/
+
+    std::cout << "\nTesting base64 decoding... ";
+    std::string textstr("Man is distinguished");
+    std::string b64str = b64_encode_text(textstr);
+    std::string backtotext = b64_decode(b64str);
+
+    if (backtotext == textstr)
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
+#endif
+
+#ifdef HEXBIN
+    std::cout << "\nTesting binary to hex string conversion... ";
+
+    std::string hexstr2("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
+    std::vector<byte> binstr = hex_to_bin(hexstr2);
+    std::string backtohex = bin_to_hex(binstr);
+
+    if (backtohex == hexstr2)
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
+#endif
+
 #ifdef SINGLEB_XOR
-    std::cout << "Testing single-byte XOR..." << std::endl;
-    const char cipher[] = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    std::list<Plaintext> rank = singlebyte_xor(cipher, sizeof(cipher) - 1);
+    std::cout << "\nTesting single-byte XOR..." << std::endl;
+    std::string cipher("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
+    std::cout << "...ciphertext: " << cipher << std::endl;
+    std::list<Plaintext> rank1 = singlebyte_xor(cipher);
 
-    for (Plaintext p : rank)
-        std::cout << "Score = " << p.score << ", key = " << p.key << ", plaintext = \"" << p.plaintext << '\"' << std::endl;
-
+    std::cout << "...plaintext candidates: " << std::endl;
+    int i1 = 1;
+    for (Plaintext p : rank1) {
+        std::cout << "......(" << i1 << ") \"" << p.plaintext << '\"' << std::endl;
+        std::cout << "..........(score = " << p.score << ", key = " << p.key << ")" << std::endl;
+        ++i1;
+    }
 #endif
 
 #ifdef DETECT_SINGLEB_XOR
-    std::cout << "Detecting single-byte XOR..." << std::endl;
+    std::cout << "\nTesting detect single-byte XOR... " << std::endl;
 
+    std::string filename("4.txt");
     std::ifstream file;
-    file.open("4.txt");
+    file.open(filename);
     if (!file.is_open()) {
         std::cerr << "Error opening file" << std::endl;
         return -1;
     }
 
-    std::list<Plaintext> rank = detect_singlebyte_xor(file);
+    std::cout << "...ciphertext: \"" << filename << '\"' << std::endl;
 
-    for (Plaintext p : rank)
-        std::cout << '\"' << p.plaintext << "\" (score = " << p.score << ", key = " << p.key << ", line = " << p.linenumber << ")" << std::endl;
+    std::list<Plaintext> rank2 = detect_singlebyte_xor(file);
+
+    std::cout << "...plaintext candidates: " << std::endl;
+    int i2 = 1;
+    for (Plaintext p : rank2) {
+        std::cout << "......(" << i2 << ") \"" << p.plaintext << '\"' << std::endl;
+        std::cout << "..........(score = " << p.score << ", key = " << p.key << ", line = " << p.linenumber << ")" << std::endl;
+        ++i2;
+    }
 #endif
 
-#ifdef BASE64
+#if 0
     std::cout << "Testing base64 encoding..." << std::endl;
     std::string str("Man is distinguished");
-    std::string b64str = b64_encode(str);
+    std::string b64str = b64_encode_text(str);
 
     std::cout << b64str << std::endl;
 
@@ -66,10 +116,13 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef HAMMING_DIST
-    std::cout << "Test hamming distance..." << std::endl;
+    std::cout << "\nTesting hamming distance... ";
     int hamming = hamming_distance(std::string("this is a test"), std::string("wokka wokka!!!"));
 
-    std::cout << "Hamming distance is " << hamming << std::endl;
+    if (hamming == 37)
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
 #endif
 
     return 0;
