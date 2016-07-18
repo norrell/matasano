@@ -34,11 +34,9 @@ int main(int argc, char *argv[])
     /**********************************************/
 
     std::cout << "\nTesting base64 decoding... ";
-    std::string textstr1("Man is distinguished");
-    std::string b64str = b64_encode_text(textstr1);
-    std::string backtotext = b64_decode(b64str);
+    std::string textstr1 = b64_decode("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
 
-    if (backtotext == textstr1)
+    if (textstr1 == "I'm killing your brain like a poisonous mushroom")
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
@@ -74,7 +72,6 @@ int main(int argc, char *argv[])
 
 #ifdef DETECT_SINGLEB_XOR
     std::cout << "\nTesting detect single-byte XOR... " << std::endl;
-
     std::string filename("4.txt");
     std::ifstream file;
     file.open(filename);
@@ -82,11 +79,9 @@ int main(int argc, char *argv[])
         std::cerr << "Error opening file" << std::endl;
         return -1;
     }
-
     std::cout << "...ciphertext: \"" << filename << '\"' << std::endl;
 
     std::list<Plaintext> rank2 = detect_singlebyte_xor(file);
-
     std::cout << "...plaintext candidates: " << std::endl;
     int i2 = 1;
     for (Plaintext p : rank2) {
