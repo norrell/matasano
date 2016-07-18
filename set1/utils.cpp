@@ -135,7 +135,7 @@ static std::string b64_decode(const std::vector<byte> &v)
     do {
         for (int i = 0; i <= 3; ++i) {
             if (v[offset + i] > 128 || unbase64[v[offset + i]] == -1) {
-                std::cerr << "Offset " << offset << ", invalid character for base64 encoding: " << (char) v[offset + i] << std::endl;
+                std::cerr << "Invalid character for base64 encoding: " << (char) v[offset + i] << std::endl;
                 return std::string("");
             }
         }
