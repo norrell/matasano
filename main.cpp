@@ -51,6 +51,11 @@ int main(int argc, char *argv[])
 
     std::cout << b64str << std::endl;
 
+    std::cout << "Testing base64 decoding..." << std::endl;
+    std::string b64dec = b64_decode(b64str);
+
+    std::cout << b64dec << std::endl;
+
     std::ifstream in("man.txt", std::ios::in | std::ios::binary);
     if (!in.is_open()) {
         std::cerr << "Error opening file" << std::endl;

@@ -54,41 +54,31 @@ static std::string b64_encode(const std::vector<byte> &v){
     size_t len = v.size();
     size_t strsize = (size_t) (4 * std::ceil((double) len / 3.0));
     std::string str(strsize, '.');
-    //size_t len = v.size();
 
     const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
     int offset = 0;
     int i = 0;
     do {
-        str[i] = base64[(int) ((v[offset + 0] & 0xfc) >> 2)];
-        i++;
+        str[i++] = base64[(int) ((v[offset + 0] & 0xfc) >> 2)];
 
         if (len == 1) {
-            str[i] = base64[(int) ((v[offset + 0] & 0x03) << 4)];
-            i++;
-            str[i] = '=';
-            i++;
-            str[i] = '=';
-            i++;
+            str[i++] = base64[(int) ((v[offset + 0] & 0x03) << 4)];
+            str[i++] = '=';
+            str[i++] = '=';
             break;
         }
 
-        str[i] = base64[(int) (((v[offset + 0] & 0x03) << 4) | ((v[offset + 1] & 0xf0) >> 4))];
-        i++;
+        str[i++] = base64[(int) (((v[offset + 0] & 0x03) << 4) | ((v[offset + 1] & 0xf0) >> 4))];
 
         if (len == 2) {
-            str[i] = base64[(int) ((v[offset + 1] & 0x0f) << 2)];
-            i++;
-            str[i] = '=';
-            i++;
+            str[i++] = base64[(int) ((v[offset + 1] & 0x0f) << 2)];
+            str[i++] = '=';
             break;
         }
 
-        str[i] = base64[(int) (((v[offset + 1] & 0x0f) << 2) | ((v[offset + 2] & 0xc0) >> 6))];
-        i++;
-        str[i] = base64[(int) (v[offset + 2] & 0x3f)];
-        i++;
+        str[i++] = base64[(int) (((v[offset + 1] & 0x0f) << 2) | ((v[offset + 2] & 0xc0) >> 6))];
+        str[i++] = base64[(int) (v[offset + 2] & 0x3f)];
         offset += 3;
     } while (len -= 3);
 
@@ -118,9 +108,65 @@ std::string b64_encode(std::ifstream &file)
     return b64_encode(contents);
 }
 
+static std::string b64_decode(const std::vector<byte> &v)
+{
+    int unbase64[] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63, 52,
+        53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, 0, -1, -1, -1,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1,
+        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+        42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1, -1
+    };
 
-std::string b64_decode(const std::string &str) {
-    // TODO
+    int len = v.size();
+    std::string str(len, '.');
+
+    if (len & 0x03) {
+        std::cerr << "String length must be an even multiple of 4" << std::endl;
+        return std::string("");
+    }
+
+    int offset = 0;
+    size_t strlen = 0;
+    int k = 0;
+    do {
+        for (int i = 0; i <= 3; ++i) {
+            if (v[offset + i] > 128 || unbase64[v[offset + i]] == -1) {
+                std::cerr << "Offset " << offset << ", invalid character for base64 encoding: " << (char) v[offset + i] << std::endl;
+                return std::string("");
+            }
+        }
+
+        str[k++] = (char) ((unbase64[v[offset + 0]] << 2) | ((unbase64[v[offset + 1]] & 0x30) >> 4));
+        strlen++;
+
+        if ((char) v[offset + 2] != '=') {
+            str[k++] = (char) (((unbase64[v[offset + 1]] & 0x0f) << 4) | ((unbase64[v[offset + 2]] & 0x3c) >> 2));
+            strlen++;
+        }
+
+        if ((char) v[offset + 3] != '=') {
+            str[k++] = (char) (((unbase64[v[offset + 2]] & 0x03) << 6) | unbase64[v[offset + 3]]);
+            strlen++;
+        }
+        offset += 4;
+    } while (len -= 4);
+
+    str.resize(strlen);
+
+    return str;
+}
+
+/*
+ * Base64-decode a string
+ */
+std::string b64_decode(const std::string &str)
+{
+    std::vector<byte> v(str.begin(), str.end());
+    return b64_decode(v);
 }
 
 /*
