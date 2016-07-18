@@ -53,7 +53,7 @@ std::string bin_to_hex(const std::vector<byte> &bin)
 
     std::string str(2 * bin.size(), '.');
 
-    for (int i = 0, k = 0; i < bin.size(); i += 1, k += 2) {
+    for (unsigned int i = 0, k = 0; i < bin.size(); i += 1, k += 2) {
         byte u_nibble, l_nibble;
         u_nibble = bin[i] >> 4;
         l_nibble = bin[i] & 0x0f;
@@ -147,7 +147,8 @@ static std::string b64_decode(const std::vector<byte> &v)
     };
 
     int len = v.size();
-    std::string str(len, '.');
+    //std::string str(len, '.');
+    std::vector<byte> bin(len, 0);
 
     if (len & 0x03) {
         std::cerr << "String length must be an even multiple of 4" << std::endl;
@@ -165,24 +166,24 @@ static std::string b64_decode(const std::vector<byte> &v)
             }
         }
 
-        str[k++] = (char) ((unbase64[v[offset + 0]] << 2) | ((unbase64[v[offset + 1]] & 0x30) >> 4));
+        bin[k++] = (byte) ((unbase64[v[offset + 0]] << 2) | ((unbase64[v[offset + 1]] & 0x30) >> 4));
         strlen++;
 
         if ((char) v[offset + 2] != '=') {
-            str[k++] = (char) (((unbase64[v[offset + 1]] & 0x0f) << 4) | ((unbase64[v[offset + 2]] & 0x3c) >> 2));
+            bin[k++] = (byte) (((unbase64[v[offset + 1]] & 0x0f) << 4) | ((unbase64[v[offset + 2]] & 0x3c) >> 2));
             strlen++;
         }
 
         if ((char) v[offset + 3] != '=') {
-            str[k++] = (char) (((unbase64[v[offset + 2]] & 0x03) << 6) | unbase64[v[offset + 3]]);
+            bin[k++] = (byte) (((unbase64[v[offset + 2]] & 0x03) << 6) | unbase64[v[offset + 3]]);
             strlen++;
         }
         offset += 4;
     } while (len -= 4);
 
-    str.resize(strlen);
+    bin.resize(strlen);
 
-    return str;
+    return std::string(bin.begin(), bin.end());
 }
 
 /*
@@ -192,6 +193,27 @@ std::string b64_decode(const std::string &str)
 {
     std::vector<byte> v(str.begin(), str.end());
     return b64_decode(v);
+}
+
+void b64_decode_file(const std::string &from, const std::string &to)
+{
+    std::ifstream ffrom(from);
+    if (!ffrom.is_open()) {
+        std::cerr << "Could not open input file" << std::endl;
+        return;
+    }
+    std::ofstream fto(to, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!fto.is_open()) {
+        std::cerr << "Could not open output file" << std::endl;
+        return;
+    }
+
+    for (std::string line; std::getline(ffrom, line); ) {
+        std::string decoded_line = b64_decode(line);
+        fto.write(decoded_line.c_str(), decoded_line.size());
+    }
+
+    return;
 }
 
 /*
@@ -209,7 +231,7 @@ static int calc_hamming_dist(byte c1, byte c2)
     return dist;
 }
 
-int hamming_distance(const std::string &s1, const std::string &s2)
+int hamming_distance(const std::string &s1, const std::vector<byte> &s2)
 {
     if (s1.size() != s2.size()) {
         std::cerr << "Strings must be of equal length" << std::endl;
@@ -219,6 +241,21 @@ int hamming_distance(const std::string &s1, const std::string &s2)
     int dist = 0;
     for (unsigned int i = 0; i < s1.size(); ++i) {
         dist += calc_hamming_dist((byte) s1[i], (byte) s2[i]);
+    }
+
+    return dist;
+}
+
+int hamming_distance(const std::vector<byte> &v1, const std::vector<byte> &v2)
+{
+    if (v1.size() != v2.size()) {
+        std::cerr << "Arrays must be of equal length" << std::endl;
+        return -1;
+    }
+
+    int dist = 0;
+    for (unsigned int i = 0; i < v1.size(); ++i) {
+        dist += calc_hamming_dist(v1[i], v2[i]);
     }
 
     return dist;

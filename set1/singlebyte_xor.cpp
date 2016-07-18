@@ -174,6 +174,11 @@ static int evaluate_letter_freq(const std::map<byte, int> &map)
      * positions even though they should be in the "same" position.
      * Hence their position in the string doesn't really say
      * much about the actual relative frequencies.
+     *
+     * TODO
+     * Adjust for breaking Vigenere, i.e.
+     * 1. reintegrate least frequent letters
+     * 2. ?
      */
     int score = 0;
 
@@ -241,6 +246,12 @@ static int get_consonant_amount(std::map<byte, int> &symbol_freq)
  */
 static int calc_score(std::map<byte, int> &symbol_freq, size_t bufsize)
 {
+    /*
+     * TODO
+     * Adjust function for breaking Vigenere.
+     * The vowels to consonants ratio should probably be left out,
+     * but more importance should be given to the letter frequencies.
+     */
     int score = 0;
 
     /*
@@ -293,13 +304,15 @@ static bool comp_score(const Plaintext &text1, const Plaintext &text2)
  * Receives a vector of encrypted bytes.
  * Returns a list of the plaintext candidates with the highest scores.
  */
-static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, int lno)
+//std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, int lno)
+byte singlebyte_xor(const std::vector<byte> &cipher, int lno)
 {
-    std::list<Plaintext> best;
+//    std::list<Plaintext> best;
     size_t size = cipher.size();
     std::map<byte, int> symbol_freq;
     std::vector<byte> plain(size, (byte) 0);
     int maxscore = INT_MIN;
+    byte bestkey = 0;
 
     for (unsigned int key = 0; key < 256; ++key) {
         reset_symbol_freqs(symbol_freq);
@@ -311,17 +324,38 @@ static std::list<Plaintext> singlebyte_xor(const std::vector<byte> &cipher, int 
 
         int score = calc_score(symbol_freq, size);
 
-        if (score > INT_MIN && score >= maxscore) {
+        /*
+         * TODO
+         * This part needs to be adjusted for breaking Vigenere.
+         * In that case we're not interesting in receiving a plaintext,
+         * since we're only solving for a block and hence we're not
+         * expecting any plaintext at this stage.
+         * Should return the key with the best score, or maybe a list of the best
+         * keys, no more.
+         */
+        //if (score > INT_MIN && score >= maxscore) {
+        if (score > INT_MIN && score > maxscore) {
             maxscore = score;
-            Plaintext t = {score, (int) key, lno, std::string(plain.begin(), plain.end())};
-            best.push_back(t);
+            bestkey = (byte) key;
+            //Plaintext t = {score, (int) key, lno, std::string(plain.begin(), plain.end())};
+            //best.push_back(t);
+        } else if (score > INT_MIN && score == maxscore) {
+            std::cout << "Keys with same score!" << std::endl;
         }
     }
 
-    best.sort(comp_score);
-    best.reverse(); /* highest score at the beginning */
+    //best.sort(comp_score);
+    //best.reverse(); /* highest score at the beginning */
 
-    return best;
+    //return best;
+    return bestkey;
+}
+
+//std::list<Plaintext> singlebyte_xor(const std::string &hexstr, int lno)
+byte singlebyte_xor(const std::string &hexstr, int lno)
+{
+    std::vector<byte> cipher = hex_to_bin(hexstr);
+    return singlebyte_xor(cipher, lno);
 }
 
 #if 0
@@ -334,8 +368,3 @@ std::list<Plaintext> singlebyte_xor(const char *cipherhex, size_t strlen_nonull,
 }
 #endif
 
-std::list<Plaintext> singlebyte_xor(const std::string &hexstr, int lno)
-{
-    std::vector<byte> cipher = hex_to_bin(hexstr);
-    return singlebyte_xor(cipher, lno);
-}

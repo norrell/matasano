@@ -5,16 +5,18 @@
 #include <fstream>
 
 #include "singlebyte_xor.h"
-#include "detect_singlebyte_xor.h"
+//#include "detect_singlebyte_xor.h"
 #include "repeatkey_xor.h"
+#include "break_repeatkey_xor.h"
 #include "utils.h"
 
-#define BASE64
-#define HEXBIN
-#define SINGLEB_XOR
-#define DETECT_SINGLEB_XOR
-#define HAMMING_DIST
-#define REPEAT_XOR
+//#define BASE64
+//#define HEXBIN
+//#define SINGLEB_XOR
+//#define DETECT_SINGLEB_XOR
+//#define HAMMING_DIST
+//#define REPEAT_XOR
+#define BREAK_REPEAT_XOR
 
 /*
  * Pass hexstring as argument in argv[1]
@@ -32,7 +34,6 @@ int main(int argc, char *argv[])
         std::cout << "TEST FAILED" << std::endl;
 
     /**********************************************/
-
     std::cout << "\nTesting base64 decoding... ";
     std::string textstr1 = b64_decode("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
 
@@ -40,6 +41,9 @@ int main(int argc, char *argv[])
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
+
+    /**********************************************/
+    b64_decode_file("6.txt", "6dec.txt");
 #endif
 
 #ifdef HEXBIN
@@ -132,6 +136,14 @@ int main(int argc, char *argv[])
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
+#endif
+
+#ifdef BREAK_REPEAT_XOR
+    std::cout << "Breaking Vigenere... " << std::endl;
+    std::string key = break_repeatkey_xor("6dec.txt");
+
+    std::cout << "Key is :" << key << std::endl;
+    repeatkey_xor_decrypt_file("6dec.txt", key);
 #endif
 
     return 0;
