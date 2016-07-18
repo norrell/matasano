@@ -99,6 +99,11 @@ std::string b64_encode(const std::string &str)
  */
 std::string b64_encode(std::ifstream &file)
 {
+    /*
+     * Currently reads entire file into string.
+     * Not good for large files.
+     * Prefer b64_encode(std::string) for now.
+     */
     std::string contents;
     file.seekg(0, std::ios::end);
     contents.resize(file.tellg());
