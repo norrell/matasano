@@ -4,11 +4,15 @@
 #include <list>
 #include <fstream>
 
-#include "singlebyte_xor.h"
+//#include "singlebyte_xor.h"
 //#include "detect_singlebyte_xor.h"
-#include "repeatkey_xor.h"
-#include "break_repeatkey_xor.h"
-#include "utils.h"
+//#include "repeatkey_xor.h"
+//#include "break_repeatkey_xor.h"
+//#include "base64.h"
+#include "vigenere.h"
+#include "aes_ecb.h"
+#include "hexbin.h"
+#include "IO.h"
 
 //#define BASE64
 //#define HEXBIN
@@ -16,7 +20,9 @@
 //#define DETECT_SINGLEB_XOR
 //#define HAMMING_DIST
 //#define REPEAT_XOR
-#define BREAK_REPEAT_XOR
+//#define BREAK_REPEAT_XOR
+//#define VIGENERE
+#define AES
 
 /*
  * Pass hexstring as argument in argv[1]
@@ -50,8 +56,8 @@ int main(int argc, char *argv[])
     std::cout << "\nTesting binary to hex string conversion... ";
 
     std::string hexstr2("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
-    std::vector<byte> binstr = hex_to_bin(hexstr2);
-    std::string backtohex = bin_to_hex(binstr);
+    std::vector<unsigned char> binstr = hex2bin(hexstr2);
+    std::string backtohex = bin2hex(binstr);
 
     if (backtohex == hexstr2)
         std::cout << "TEST PASSED" << std::endl;
@@ -95,39 +101,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-#if 0
-    std::cout << "Testing base64 encoding..." << std::endl;
-    std::string str("Man is distinguished");
-    std::string b64str = b64_encode_text(str);
-
-    std::cout << b64str << std::endl;
-
-    std::cout << "Testing base64 decoding..." << std::endl;
-    std::string b64dec = b64_decode(b64str);
-
-    std::cout << b64dec << std::endl;
-
-    std::ifstream in("man.txt", std::ios::in | std::ios::binary);
-    if (!in.is_open()) {
-        std::cerr << "Error opening file" << std::endl;
-        return -1;
-    }
-
-    std::cout << b64_encode(in) << std::endl;
-#endif
-
-#ifdef REPEAT_XOR
-    std::cout << "\nTesting repeating-key XOR... ";
-
-    std::string textstr2("Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal");
-    std::string encr2 = repeatkey_xor(textstr2, "ICE");
-
-    if (encr2 == "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")
-        std::cout << "TEST PASSED" << std::endl;
-    else
-        std::cout << "TEST FAILED" << std::endl;
-#endif
-
 #ifdef HAMMING_DIST
     std::cout << "\nTesting hamming distance... ";
     int hamming = hamming_distance(std::string("this is a test"), std::string("wokka wokka!!!"));
@@ -138,12 +111,32 @@ int main(int argc, char *argv[])
         std::cout << "TEST FAILED" << std::endl;
 #endif
 
-#ifdef BREAK_REPEAT_XOR
-    std::cout << "Breaking Vigenere... " << std::endl;
-    std::string key = break_repeatkey_xor("6dec.txt");
+#ifdef VIGENERE
+    std::cout << "\nTesting Vigenere encrpytion... ";
 
-    std::cout << "Key is :" << key << std::endl;
-    repeatkey_xor_decrypt_file("6dec.txt", key);
+    std::string textstr2("Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal");
+    std::string encr2 = vigenere::encrypt(textstr2, "ICE");
+
+    if (encr2 == "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")
+        std::cout << "TEST PASSED" << std::endl;
+    else
+        std::cout << "TEST FAILED" << std::endl;
+
+    std::cout << "Breaking Vigenere... " << std::endl;
+    vigenere::break_it("6dec.txt", "6plain.txt");
+#endif
+
+#ifdef AES
+//    b64_decode_file("7.txt", "7_unb64.txt");
+    std::vector<unsigned char> ciphertext = from_file("7_unb64.txt");
+    std::cout << "Encrypted file contains " << ciphertext.size() << " bytes" << std::endl;
+
+    std::string key("YELLOW SUBMARINE");
+    std::vector<unsigned char> plaintext(ciphertext.size(), 0);
+    aes_128_decrypt(ciphertext, plaintext, key);
+    to_file(plaintext, "7_dec.txt");
+
+    detect_aes128_ecb("8.txt");
 #endif
 
     return 0;
