@@ -10,7 +10,7 @@
 //#include "break_repeatkey_xor.h"
 //#include "base64.h"
 #include "vigenere.h"
-#include "aes128_ecb.h"
+#include "aes128.h"
 #include "hexbin.h"
 #include "IO.h"
 

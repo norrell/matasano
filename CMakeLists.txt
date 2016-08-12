@@ -15,6 +15,6 @@ set(SOURCES # test_aes.cpp
            # set1/repeatkey_xor.cpp
            # set1/break_repeatkey_xor.cpp
             vigenere.cpp
-            aes128_ecb.cpp)
+            aes128.cpp)
 
 add_executable(matasano ${SOURCES})
