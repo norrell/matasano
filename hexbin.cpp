@@ -2,10 +2,8 @@
 #include <vector>
 #include <string>
 
-#include "typedefs.h"
-
 static const char hexdigits[] = "0123456789abcdef";
-static const byte hashmap[] = {
+static const unsigned char hashmap[] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ........
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ........
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ........
@@ -20,30 +18,30 @@ static const byte hashmap[] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // XYZ[\]^_
         0x00, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };     // `abcdef
 
-std::vector<byte> hex2bin(const std::string& hexstr)
+std::vector<unsigned char> hex2bin(const std::string& hexstr)
 {
-    std::vector<byte> bin(hexstr.size() / 2, 0);
+    std::vector<unsigned char> bin(hexstr.size() / 2, 0);
 
     if (hexstr.size() % 2) {
         std::cerr << "Even number of hex digits required" << std::endl;
         return bin;
     }
 
-    byte first, second;
+    unsigned char first, second;
     for (int i = 0; i < hexstr.size() - 1; i += 2) {
         first = hashmap[(int) hexstr[i]];
         second = hashmap[(int) hexstr[i + 1]];
-        bin[i / 2] = (byte) ((first << 4) | second);
+        bin[i / 2] = (unsigned char) ((first << 4) | second);
     }
 
     return bin;
 }
 
-std::string bin2hex(const std::vector<byte>& bin)
+std::string bin2hex(const std::vector<unsigned char>& bin)
 {
     std::string str(2 * bin.size(), '.');
 
-    byte u_nibble, l_nibble;
+    unsigned char u_nibble, l_nibble;
     for (int i = 0, k = 0; i < bin.size(); i += 1, k += 2) {
         u_nibble = bin[i] >> 4;
         l_nibble = bin[i] & 0x0f;

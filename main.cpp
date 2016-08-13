@@ -8,10 +8,11 @@
 //#include "detect_singlebyte_xor.h"
 //#include "repeatkey_xor.h"
 //#include "break_repeatkey_xor.h"
-//#include "base64.h"
+#include "base64.h"
 #include "vigenere.h"
 #include "aes128.h"
 #include "hexbin.h"
+#include "pkcs7.h"
 #include "IO.h"
 
 //#define BASE64
@@ -22,6 +23,7 @@
 //#define REPEAT_XOR
 //#define BREAK_REPEAT_XOR
 //#define VIGENERE
+//#define PKCS7
 #define AES
 
 /*
@@ -32,24 +34,22 @@ int main(int argc, char *argv[])
 #ifdef BASE64
     std::cout << "Testing base64 encoding... ";
     std::string hexstr1("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
-    std::string b64enc = b64_encode(hexstr1);
+    std::string b64enc = b64enc_hex(hexstr1);
 
     if (b64enc == "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t")
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
 
-    /**********************************************/
     std::cout << "\nTesting base64 decoding... ";
-    std::string textstr1 = b64_decode("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
-
-    if (textstr1 == "I'm killing your brain like a poisonous mushroom")
+    std::vector<unsigned char> textstr1 = b64dec("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
+    std::string tos(textstr1.begin(), textstr1.end());
+    if (tos == "I'm killing your brain like a poisonous mushroom")
         std::cout << "TEST PASSED" << std::endl;
     else
         std::cout << "TEST FAILED" << std::endl;
 
-    /**********************************************/
-    b64_decode_file("6.txt", "6dec.txt");
+    b64dec("input/6.txt", "/tmp/6_unb64.txt");
 #endif
 
 #ifdef HEXBIN
@@ -127,16 +127,22 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef AES
-//    b64_decode_file("7.txt", "7_unb64.txt");
-    std::vector<unsigned char> ciphertext = from_file("7_unb64.txt");
+    b64dec("input/7.txt", "/tmp/7_unb64.txt");
+    std::vector<unsigned char> ciphertext = from_file("/tmp/7_unb64.txt");
     std::cout << "Encrypted file contains " << ciphertext.size() << " bytes" << std::endl;
 
     std::string key("YELLOW SUBMARINE");
     std::vector<unsigned char> plaintext(ciphertext.size(), 0);
-    aes_128_decrypt(ciphertext, plaintext, key);
-    to_file(plaintext, "7_dec.txt");
+    aes128_ecb_decrypt(ciphertext, plaintext, key);
+    to_file(plaintext, "/tmp/7_dec.txt");
 
-    detect_aes128_ecb("8.txt");
+    //detect_aes128_ecb("8.txt");
+#endif
+
+#ifdef PKCS7
+    std::string msg("YELLOW SUBMARINE");
+    std::vector<unsigned char> m = pkcs7::pad(msg, 20);
+    std::cout << bin2hex(m) << std::endl;
 #endif
 
     return 0;

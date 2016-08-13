@@ -3,10 +3,11 @@
 #include <vector>
 #include <cmath>
 #include <fstream>
+#include <iterator>
+#include <algorithm>
 
 #include "hexbin.h"
 #include "base64.h"
-#include "typedefs.h"
 
 /****************************************/
 /**************** ENCODE ****************/
@@ -17,7 +18,7 @@ static const char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 /**
  * Base64-encode an array of bytes
  */
-std::string b64enc(const std::vector<byte>& v){
+std::string b64enc(const std::vector<unsigned char> & v){
     size_t vlen = v.size();
     size_t enclen = (size_t) (4 * std::ceil((double) vlen / 3.0));
     std::string enc(enclen, '.');
@@ -52,25 +53,25 @@ std::string b64enc(const std::vector<byte>& v){
 /**
  * Base64-encode a string of hexadecimal digits
  */
-std::string b64enc_hex(const std::string& hexstr)
+std::string b64enc_hex(const std::string & hexstr)
 {
-    std::vector<byte> v = hex2bin(hexstr);
+    std::vector<unsigned char> v = hex2bin(hexstr);
     return b64enc(v);
 }
 
 /*
  * Base64-encode a character string
  */
-std::string b64enc(const std::string& str)
+std::string b64enc(const std::string & str)
 {
-    std::vector<byte> v(str.begin(), str.end());
+    std::vector<unsigned char> v(str.begin(), str.end());
     return b64enc(v);
 }
 
 /*
  * Base64-encode a file
  */
-std::string b64enc(std::ifstream& file)
+std::string b64enc(std::ifstream & file)
 {
     /*
      * Currently reads entire file into string.
@@ -102,17 +103,17 @@ static const int unbase64[] = {
 
 /**
  * Base64-decode an array of bytes
- * \return string or vector<byte> ???? I think it should rather by a vector of bytes
+ * \return string or vector<unsigned char> ???? I think it should rather by a vector of bytes
  */
-std::string b64dec(const std::vector<byte>& v)
+std::vector<unsigned char> b64dec(const std::vector<unsigned char> & v)
 {
     int vlen = v.size();
-    std::vector<byte> dec(vlen, 0);
+    std::vector<unsigned char> dec(vlen, 0);
     size_t declen = 0;
 
     if (vlen & 0x03) {
         std::cerr << "String length must be an even multiple of 4" << std::endl;
-        return std::string("");
+        return dec;
     }
 
     int offset = 0;
@@ -121,20 +122,20 @@ std::string b64dec(const std::vector<byte>& v)
         for (int i = 0; i <= 3; ++i) {
             if (v[offset + i] > 128 || unbase64[v[offset + i]] == -1) {
                 std::cerr << "Invalid character for base64 encoding: " << (char) v[offset + i] << std::endl;
-                return std::string("");
+                return dec;
             }
         }
 
-        dec[k++] = (byte) ((unbase64[v[offset + 0]] << 2) | ((unbase64[v[offset + 1]] & 0x30) >> 4));
+        dec[k++] = (unsigned char) ((unbase64[v[offset + 0]] << 2) | ((unbase64[v[offset + 1]] & 0x30) >> 4));
         declen++;
 
         if ((char) v[offset + 2] != '=') {
-            dec[k++] = (byte) (((unbase64[v[offset + 1]] & 0x0f) << 4) | ((unbase64[v[offset + 2]] & 0x3c) >> 2));
+            dec[k++] = (unsigned char) (((unbase64[v[offset + 1]] & 0x0f) << 4) | ((unbase64[v[offset + 2]] & 0x3c) >> 2));
             declen++;
         }
 
         if ((char) v[offset + 3] != '=') {
-            dec[k++] = (byte) (((unbase64[v[offset + 2]] & 0x03) << 6) | unbase64[v[offset + 3]]);
+            dec[k++] = (unsigned char) (((unbase64[v[offset + 2]] & 0x03) << 6) | unbase64[v[offset + 3]]);
             declen++;
         }
         offset += 4;
@@ -142,37 +143,24 @@ std::string b64dec(const std::vector<byte>& v)
 
     dec.resize(declen);
 
-    return std::string(dec.begin(), dec.end());
+    return dec;
 }
 
 /**
  * Base64-decode a character string
  */
-std::string b64dec(const std::string& str)
+std::vector<unsigned char> b64dec(const std::string & str)
 {
-    std::vector<byte> v(str.begin(), str.end());
+    std::vector<unsigned char> v(str.begin(), str.end());
     return b64dec(v);
 }
 
 /**
- * Base64-decode an open file
- */
-#if 0
-void b64dec(const std::ifstream& from, const std::ofstream& to)
-{
-    for (std::string line; std::getline(from, line); ) {
-        std::string decline = b64dec(line);
-        to.write(decline.c_str(), decline.size());
-    }
-}
-#endif
-
-/**
  * Base64-decode a file
  */
-void b64dec(const std::string &from, const std::string &to)
+void b64dec(const std::string & from, const std::string & to)
 {
-    std::ifstream ffrom(from);
+    std::ifstream ffrom(from, std::ios::in | std::ios::binary);
     if (!ffrom.is_open()) {
         std::cerr << "Could not open input file" << std::endl;
         return;
@@ -183,5 +171,9 @@ void b64dec(const std::string &from, const std::string &to)
         return;
     }
 
-    b64dec(ffrom, fto);
+    for (std::string line; std::getline(ffrom, line); ) {
+        std::vector<unsigned char> dec = b64dec(line);
+        std::ostream_iterator<unsigned char> it(fto);
+        std::copy(dec.begin(), dec.end(), it);
+    }
 }

@@ -6,7 +6,9 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "aes_ecb.h"
+#include "aes128.h"
+
+//#define AES_DEBUG
 
 /* 1 word = 4 octets */
 #define Nb  4 /* Block size is Nb words */
@@ -64,6 +66,42 @@ static void AddRoundKey(unsigned char state[][4], unsigned char w[][4])
             state[r][c] ^= w[c][r];
 }
 
+static void ShiftRows(unsigned char state[][4])
+{
+    int tmp;
+
+    /*
+     * first row (r = 0) is not shifted
+     */
+
+    /*
+     * second row (r = 1) is shifted right by 1 byte
+     */
+    tmp = state[1][0];
+    state[1][0] = state[1][1];
+    state[1][1] = state[1][2];
+    state[1][2] = state[1][3];
+    state[1][3] = tmp;
+
+    /*
+     * third row (r = 2) is shifted right by 2 bytes, i.e. we
+     * swap the pairs (2,0)-(2,2) and (2,1)-(2,3)
+     */
+    tmp = state[2][0];
+    state[2][0] = state[2][2];
+    state[2][2] = tmp;
+    tmp = state[2][1];
+    state[2][1] = state[2][3];
+    state[2][3] = tmp;
+
+    /* fourth row (r = 3) is shifted right by 3 bytes */
+    tmp = state[3][3];
+    state[3][3] = state[3][2];
+    state[3][2] = state[3][1];
+    state[3][1] = state[3][0];
+    state[3][0] = tmp;
+}
+
 static void InvShiftRows(unsigned char state[][4])
 {
     int tmp;
@@ -100,6 +138,13 @@ static void InvShiftRows(unsigned char state[][4])
     state[3][3] = tmp;
 }
 
+static void SubBytes(unsigned char state[][4])
+{
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            state[r][c] = sbox[(state[r][c] & 0xf0) >> 4][state[r][c] & 0x0f];
+}
+
 /**
  * Apply the inverse S-box to each byte of the state
  */
@@ -128,6 +173,26 @@ static char dot(unsigned char x, unsigned char y)
     return product;
 }
 
+static void MixColumns(unsigned char state[][4])
+{
+    unsigned char t[4];
+
+    for (int c = 0; c < 4; ++c) {
+        t[0] = dot(0x02, state[0][c]) ^ dot(0x03, state[1][c]) ^
+               state[2][c]            ^ state[3][c];
+        t[1] = state[0][c]            ^ dot(0x02, state[1][c]) ^
+               dot(0x03, state[2][c]) ^ state[3][c];
+        t[2] = state[0][c]            ^ state[1][c] ^
+               dot(0x02, state[2][c]) ^ dot(0x03, state[3][c]);
+        t[3] = dot(0x03, state[0][c]) ^ state[1][c] ^
+               state[2][c]            ^ dot(0x02, state[3][c]);
+        state[0][c] = t[0];
+        state[1][c] = t[1];
+        state[2][c] = t[2];
+        state[3][c] = t[3];
+    }
+}
+
 static void InvMixColumns(unsigned char state[][4])
 {
     unsigned char t[4];
@@ -148,13 +213,13 @@ static void InvMixColumns(unsigned char state[][4])
     }
 }
 
-static void sub_word(unsigned char *w)
+static void SubWord(unsigned char *w)
 {
     for (int i = 0; i < 4; ++i)
         w[i] = sbox[(w[i] & 0xf0) >> 4][w[i] & 0x0f];
 }
 
-static void rot_word(unsigned char *w)
+static void RotWord(unsigned char *w)
 {
     unsigned char tmp = w[0];
     w[0] = w[1];
@@ -174,12 +239,12 @@ void KeyExpansion(const unsigned char *key, unsigned char w[][4], size_t keylen)
         memcpy(w[i], w[i - 1], 4);
 
         if (!(i % key_words)) {
-            rot_word(w[i]);
-            sub_word(w[i]);
+            RotWord(w[i]);
+            SubWord(w[i]);
 
             w[i][0] ^= rcon[i / key_words];
         } else if ((key_words > 6) && (i % key_words == 4)) {
-            sub_word(w[i]);
+            SubWord(w[i]);
         }
 
         w[i][0] ^= w[i - key_words][0];
@@ -187,6 +252,76 @@ void KeyExpansion(const unsigned char *key, unsigned char w[][4], size_t keylen)
         w[i][2] ^= w[i - key_words][2];
         w[i][3] ^= w[i - key_words][3];
     }
+}
+
+static void Cipher(const unsigned char *in, unsigned char *out, unsigned char w[][4])
+{
+    unsigned char state[4][Nb];
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            state[r][c] = in[r + 4 * c];
+
+#ifdef AES_DEBUG
+    int q = 0;
+    printf("Round %i:\n", q);
+    printf("State = \t");
+    for (int c = 0; c < 4; ++c)
+        for (int r = 0; r < 4; ++r)
+            printf("%.2hhx", state[r][c]);
+    printf("\n");
+
+    printf("KeySched = \t");
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            printf("%.2hhx", w[r][c]);
+    printf("\n");
+#endif
+
+    AddRoundKey(state, &w[0]);
+#ifdef AES_DEBUG
+    printf("AddRoundKey = \t");
+    for (int c = 0; c < 4; ++c)
+        for (int r = 0; r < 4; ++r)
+            printf("%.2hhx", state[r][c]);
+    printf("\n");
+#endif
+
+    for (int round = 1; round < Nr; ++round) {
+        SubBytes(state);
+#ifdef AES_DEBUG
+        printf("SubBytes = \t");
+        for (int c = 0; c < 4; ++c)
+            for (int r = 0; r < 4; ++r)
+                printf("%.2hhx", state[r][c]);
+        printf("\n");
+#endif
+        ShiftRows(state);
+#ifdef AES_DEBUG
+        printf("ShiftRows = \t");
+        for (int c = 0; c < 4; ++c)
+            for (int r = 0; r < 4; ++r)
+                printf("%.2hhx", state[r][c]);
+        printf("\n");
+#endif
+        MixColumns(state);
+#ifdef AES_DEBUG
+        printf("MixColumns = \t");
+        for (int c = 0; c < 4; ++c)
+            for (int r = 0; r < 4; ++r)
+                printf("%.2hhx", state[r][c]);
+        printf("\n");
+#endif
+        AddRoundKey(state, &w[round * Nb]);
+    }
+
+    SubBytes(state);
+    ShiftRows(state);
+    AddRoundKey(state, &w[Nr * Nb]);
+
+    /* out = state */
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            out[r + 4 * c] = state[r][c];
 }
 
 /**
@@ -230,7 +365,24 @@ static void InvCipher(const unsigned char *in, unsigned char *out, unsigned char
 
 #define AES_BLOCK_SIZE 16
 
-static void aes_decrypt(std::vector<unsigned char> & input, size_t input_len, std::vector<unsigned char> & output, unsigned char w[][4])
+static void aes_ecb_encrypt(std::vector<unsigned char> & input,
+                        size_t input_len,
+                        std::vector<unsigned char> & output,
+                        unsigned char w[][4])
+{
+    unsigned char *in = &input[0], *out = &output[0];
+    while (input_len >= AES_BLOCK_SIZE) {
+        Cipher(in, out, w);
+        in += AES_BLOCK_SIZE;
+        out += AES_BLOCK_SIZE;
+        input_len -= AES_BLOCK_SIZE;
+    }
+}
+
+static void aes_ecb_decrypt(std::vector<unsigned char> & input,
+                        size_t input_len,
+                        std::vector<unsigned char> & output,
+                        unsigned char w[][4])
 {
     unsigned char *in = &input[0], *out = &output[0];
     while (input_len >= AES_BLOCK_SIZE) {
@@ -254,19 +406,42 @@ static std::string find_repeating_block(const std::string & str)
 
 /********* PUBLIC *********/
 
-void aes_128_decrypt(std::vector<unsigned char> & in, std::vector<unsigned char> & out, const unsigned char *key)
+void aes128_ecb_encrypt(std::vector<unsigned char> & in,
+                        std::vector<unsigned char> & out,
+                        const unsigned char *key)
 {
     unsigned char w[44][4]; // 44 for AES128
     KeyExpansion(key, w, 16);
 
-    aes_decrypt(in, in.size(), out, w);
+    aes_ecb_encrypt(in, in.size(), out, w);
 }
 
-void aes_128_decrypt(std::vector<unsigned char> & in, std::vector<unsigned char> & out, const std::string & key)
+void aes128_ecb_encrypt(std::vector<unsigned char> & in,
+                        std::vector<unsigned char> & out,
+                        const std::string & key)
 {
     char k[key.size()];
     strncpy(k, key.c_str(), key.size());
-    aes_128_decrypt(in, out, (unsigned char *) k);
+    aes128_ecb_encrypt(in, out, (unsigned char *) k);
+}
+
+void aes128_ecb_decrypt(std::vector<unsigned char> & in,
+                        std::vector<unsigned char> & out,
+                        const unsigned char *key)
+{
+    unsigned char w[44][4]; // 44 for AES128
+    KeyExpansion(key, w, 16);
+
+    aes_ecb_decrypt(in, in.size(), out, w);
+}
+
+void aes128_ecb_decrypt(std::vector<unsigned char> & in,
+                        std::vector<unsigned char> & out,
+                        const std::string & key)
+{
+    char k[key.size()];
+    strncpy(k, key.c_str(), key.size());
+    aes128_ecb_decrypt(in, out, (unsigned char *) k);
 }
 
 void detect_aes128_ecb(const std::string & filename)
